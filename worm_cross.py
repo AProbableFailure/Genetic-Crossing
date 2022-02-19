@@ -1,3 +1,8 @@
+from collections import Counter
+
+def tuplize_list_of_list(l):
+    return tuple(None if i is None else tuple(i) for i in l)
+
 class Worm:
     def __init__(self, genome = None, male = False, parents = (None, None), count = 1, n_number = 6) -> None:
         self.n_number, self.genome = (n_number, [[[], []] for i in range(n_number)]) if genome is None else (len(genome), genome)
@@ -5,8 +10,34 @@ class Worm:
         self.parents = parents
         self.count = count
 
-    def add_gene(self, chromosome, gene):
-        for i in range(len(gene)): self.genome[chromosome][i].append(gene[i])
+    def add_gene(self, n, gene):
+        for i in range(len(gene)): self.genome[n][i].append(gene[i])
+    def has_chromosome(self, n, chromosome):
+        return Counter(self.tuplized_genome()[n]) == Counter(tuplize_list_of_list(chromosome))
+    def has_genome(self, genome):
+        for c in range(len(genome)):
+            if not self.has_chromosome(c, genome[c]): return False
+        return True
+    def is_homozygous(self, n, gene):
+        for i in range(len(self.genome[n])):
+            # if self.genome[n][i] is None: return False # can also be 'continue'
+            if self.genome[n][i] is None or gene not in self.genome[n][i]: return False
+        return True
+    # def is_homozygous_multiple(self, ns, genes):
+        # for i in range(len(ns)):
+            # if not self.is_homozygous(ns[i], genes[i]): return False
+        # return True
+    def is_homozygous_multiple(self, genes):
+        for i in range(len(genes)):
+            for gene in genes[i]:
+                if not self.is_homozygous(i, gene): return False
+        return True
+
+
+    #def has_gene(self, chromosome, gene):
+        #for i in range(len(gene)): 
+            #if gene[i] not in self.genome[chromosome][i]: return False
+        #return True
 
     def is_male(self): return None in self.genome[0]
     def is_hermaphrodite(self): return not self.is_male()
@@ -14,7 +45,7 @@ class Worm:
     def generation(self):
         parents = [p for p in self.parents if p]
         if not parents: return 0
-        else: return (sum(map(lambda w: w.generation(), parents))/len(parents)) + 1
+        else: return max(map(lambda w: w.generation(), parents)) + 1
         # if None in self.parents:
         #     if self.parents == (None, None): return 0
         # else: return max(self.parents[0].generation, self.parents[1].generation()) + 1
@@ -33,8 +64,6 @@ class Worm:
         return tuple(tuple(None if j is None else tuple(j) for j in i) for i in self.genome)
 
     def __eq__(self, other: object) -> bool:
-        # print(tuple(reversed(other.parents)))
-        # if self.parents not in (other.parents, tuple(reversed(other.parents))): return False
         if set(self.parents) != set(other.parents): return False
         if self.n_number != other.n_number: return False        
         for c in range(self.n_number):
@@ -43,6 +72,7 @@ class Worm:
         return True
 
     def __hash__(self) -> int:
+        # print("HASH!")
         return hash((self.parents, self.count, self.tuplized_genome()))
 
     def __str__(self) -> str:
@@ -62,54 +92,38 @@ def cross(virgins, f, parents = []):
 
     dads = virgins + parents
     moms = [x for x in virgins + parents if x.is_hermaphrodite()]
-    # print(len(dads))
-    # print(len(moms))
     progeny = []
 
     for dad in dads:
         for mom in moms:
             if dad in parents and mom in parents: continue
-            # print("Mom: " + str(mom.genome))
-            # print("Dad: " + str(dad.genome))
             progeny += mom.cross(dad)
-            # print(progeny)
     
     return cross(progeny, f-1, virgins + parents)
 
 def main():
-    worm = Worm(n_number=1)
-    # print(worm.genome)
-    # worm.add_chromosomes(2, 2)
-    worm.add_gene(0, [0, 1])
-    worm2 = Worm(n_number = 1, male=True)
-    # worm2.add_chromosomes(2, 2)
-    worm2.add_gene(0, [1])
-    # worm2.add_gene(0, [0, 1])
-    print(worm.genome)
-    print(worm2.genome)
-    print(worm.is_male())
-    print()
-    # print(worm2.tuplized_genome())
-    # progeny = worm.cross(worm)
-    progeny = cross([worm], 2)
-    print(len(progeny))
-    for worm in progeny:
-        print(worm)
-        # if worm.generation() == 2: 
-            # print(worm)
-            # for parent in worm.parents:
-                # print(parent)
-            # print()
-        # print(worm.count)
-        pass
-    
-    # worm3 = Worm(n_number=1)
-    # worm3.add_gene(0, [0, 1])
-    # progeny3 = worm3.cross(worm3)
-    # print(progeny3[0] in progeny)
-    # for worm in progeny3:
-    #     print(worm.genome)
-    #     print(worm.count)
+    dad = Worm(n_number=3, male = True)
+    dad.add_gene(0, ["dlg-1::mChr"])
+    dad.add_gene(1, ["+", "+"])
+    dad.add_gene(2, ["him-5", "him-5"])
+
+    mom = Worm(n_number=3)
+    mom.add_gene(0, ["+", "+"])
+    mom.add_gene(1, ["cdc-42::GFP", "cdc-42::GFP"])
+    mom.add_gene(2, ["+", "+"])
+
+    progeny = cross([mom, dad], 3)
+
+    for child in progeny:
+        # if child.genome == [[["dlg-1::mChr"], ["dlg-1::mChr"]], [["cdc-42::GFP"], ["cdc-42::GFP"]], [["him-5"], ["him-5"]]]:
+        # if child.has_chromosome(0, [["dlg-1::mChr"], ["dlg-1::mChr"]]) and child.has_chromosome(1, [["cdc-42::GFP"], ["cdc-42::GFP"]]) and child.has_chromosome(2, [["him-5"], ["him-5"]]):
+        # if child.has_genome([[["dlg-1::mChr"], ["dlg-1::mChr"]], [["cdc-42::GFP"], ["cdc-42::GFP"]], [["him-5"], ["+"]]]):
+        # if child.is_homozygous(0, "dlg-1::mChr") and child.is_homozygous(1, "cdc-42::GFP") and child.is_homozygous(2, "him-5"):
+        # if child.is_homozygous_multiple([0, 1, 2], ["dlg-1::mChr", "cdc-42::GFP", "him-5"]):
+        if child.is_homozygous_multiple([["dlg-1::mChr"], ["cdc-42::GFP"], ["him-5"]]):
+            print(child)
+            for parent in child.parents:
+                print(parent)
 
 if __name__ == "__main__":
     main()
