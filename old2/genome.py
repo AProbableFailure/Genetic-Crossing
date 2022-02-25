@@ -52,6 +52,8 @@ class Genome:
 		for c in self.chromosomes:
 			lst.append(frozenset(tuple(g) for g in c))
 		return hash(tuple(lst))
+		# return hash(tuple((frozenset(tuple(g) for g in c)) for c in self.chromosomes))
+		# This works I think ^
 		# print(self.chromosomes)
 		#for 
 		# return hash(frozenset(to_tuple(self.chromosomes)))
